@@ -5,11 +5,22 @@
 # Always go through the BlobsController, or your own authenticated controller, rather than directly
 # to the service url.
 
+# NOTE: require AR module, else:
+# > NameError (uninitialized constant ActiveStorage::PostgreSQL::File)
+# > active_storage-postgresql (0.2.0) app/controllers/active_storage/postgresql_controller.rb:16:in `show'
+require_relative('../../../lib/active_storage/postgresql/file')
+
+# NOTE: configure cache max-age value
+DEFAULT_SEND_FILE_CACHE_CONTROL_MAX_AGE = \
+  Integer(ENV["DEFAULT_SEND_FILE_CACHE_CONTROL_MAX_AGE"] || 0).freeze
+
 class ActiveStorage::PostgresqlController < ActiveStorage::BaseController
 
   skip_forgery_protection
 
   def show
+    expires_in DEFAULT_SEND_FILE_CACHE_CONTROL_MAX_AGE, public: true
+
     if key = decode_verified_key
       response.headers["Content-Type"] = params[:content_type] || DEFAULT_SEND_FILE_TYPE
       response.headers["Content-Disposition"] = params[:disposition] || DEFAULT_SEND_FILE_DISPOSITION
